@@ -1,12 +1,16 @@
-# Main bot file 
+# main.py
+
 import os
 import logging
 from dotenv import load_dotenv
+
+# 1. Сначала загружаем переменные окружения. Это самый важный шаг.
+load_dotenv()
+
+# 2. Теперь импортируем все остальное.
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 from bot.handlers import start, zodiac_sign_handler
-
-# Загружаем переменные окружения в самом начале
-load_dotenv()
+from bot.gemini_integration import setup_gemini # Импортируем нашу новую функцию
 
 # Включаем логирование
 logging.basicConfig(
@@ -20,14 +24,16 @@ def main() -> None:
     Запуск бота.
     """
     token = os.getenv("TELEGRAM_TOKEN")
-    gemini_key = os.getenv("GEMINI_API_KEY")
-    
     if not token:
         logger.error("Не найден TELEGRAM_TOKEN в .env файле!")
         return
-    if not gemini_key:
-        logger.error("Не найден GEMINI_API_KEY в .env файле!")
-        return
+        
+    # 3. Конфигурируем Gemini ПЕРЕД созданием приложения бота.
+    try:
+        setup_gemini()
+    except ValueError as e:
+        logger.error(e)
+        return # Останавливаем запуск, если Gemini не настроен
 
     # Создаем приложение
     application = Application.builder().token(token).build()
